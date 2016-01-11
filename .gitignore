@@ -1,0 +1,5 @@
+_*
+example/*/*.js*
+example/*/*.wav
+example/*/*.mp3
+example/*/*.ogg
