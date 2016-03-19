@@ -1,5 +1,5 @@
 _*
-examples/*/*.js*
-examples/*/*.wav
-examples/*/*.mp3
-examples/*/*.ogg
+examples/*/app.js*
+*.wav
+*.mp3
+*.ogg
