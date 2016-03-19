@@ -17,6 +17,8 @@ class Metronome {
     static inline var WORKER_MSG_STOP = 1;
     static inline var WORKER_MSG_TICK = 2;
 
+	public dynamic function onTick( beatNumber : Int, time : Float ) {}
+
     public var tempo : Float; // BPM
     public var isPlaying(default,null) : Bool;
     public var scheduleAheadTime = 0.1;
@@ -66,6 +68,11 @@ class Metronome {
         isPlaying = false;
     }
 
+	public function dispose() {
+		if( isPlaying ) stop();
+		if( worker != null ) worker.terminate();
+	}
+
     function scheduleNote( beatNumber : Int, time : Float ) {
 
         notesInQueue.push( { note: beatNumber, time: time } );
@@ -75,17 +82,7 @@ class Metronome {
         if( noteResolution == 2 && beatNumber % 4 == 0 )
             return; // we're not playing non-quarter 8th notes
 
-        var osc = context.createOscillator();
-        osc.connect( context.destination );
-        osc.frequency.value = 0;
-        if( beatNumber % 16 == 0 ) // beat 0
-            osc.frequency.value = 1760.0;
-        else if( beatNumber % 4 == 0 ) // quarter notes
-            osc.frequency.value = 880.0;
-        else // other 16th notes = high pitch
-            osc.frequency.value = 440.0;
-        osc.start( time );
-        osc.stop( time + noteLength );
+		onTick( beatNumber, time );
     }
 
     function nextNote() {
