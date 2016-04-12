@@ -1,5 +1,6 @@
 package om.audio;
 
+import js.Error;
 import js.html.ArrayBuffer;
 import js.html.XMLHttpRequest;
 import js.html.audio.AudioNode;
@@ -38,7 +39,7 @@ class SoundSystem {
         master = gain;
 	}
 
-	public function load( url : String, callback : String->AudioBuffer->Void ) {
+	public function load( url : String, callback : Error->AudioBuffer->Void ) {
 		AudioBufferLoader.load( context, url, callback );
 	}
 
