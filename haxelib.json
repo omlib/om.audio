@@ -1,0 +1,12 @@
+{
+    "name": "om.audio",
+    "version": "0.1.0",
+    "description": "Webaudio Tools",
+    "tags": ["om","audio"],
+    "url": "https://github.com/tong/om.audio",
+    "license": "MIT",
+    "contributors": ["tong"],
+    "releasenote": "See CHANGELOG.md",
+    "classPath" : "src/",
+    "dependencies": {}
+}
