@@ -17,19 +17,24 @@ class AudioBufferLoader {
 	}
 
 	public static function loadArrayBuffer( context : AudioContext, url : String, callback : Error->ArrayBuffer->Void ) {
+		var errorReported = false;
 		var xhr = new XMLHttpRequest();
 		xhr.open( "GET", url, true );
 		xhr.responseType = ARRAYBUFFER;
+		/*
 		xhr.onerror = function(e){
+			trace(e);
 			callback( e, null );
 			return;
 		}
+		*/
 		xhr.onreadystatechange = function(e){
-			#if (atom||electron)
+			//#if (atom||electron)
 			// xhr.status == always 0
-			#else
-			if( xhr.status != 200 ) {
-				callback( new om.Error(url), null );
+			//#else
+			if( xhr.status != 200 && !errorReported ) {
+				errorReported = true;
+				callback( new om.error.FileNotFound( url ), null );
 				return;
 			}
 			#end
