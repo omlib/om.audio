@@ -37,7 +37,7 @@ class AudioBufferLoader {
 				callback( new om.error.FileNotFound( url ), null );
 				return;
 			}
-			#end
+			//#end
 		}
 		xhr.onload = function(e){
 			callback( null, xhr.response );
