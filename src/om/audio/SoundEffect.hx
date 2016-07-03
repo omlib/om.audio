@@ -27,7 +27,7 @@ class SoundEffect {
 	var source : AudioBufferSourceNode;
 	var pauseOffset = 0.0;
 
-	public function new( ctx : AudioContext, out : AudioNode, buf : AudioBuffer, volume = 1.0 ) {
+	public function new( ctx : AudioContext, out : AudioNode, buffer : AudioBuffer, volume = 1.0 ) {
 		this.ctx = ctx;
 		this.out = out;
 		this.buffer = buffer;
@@ -75,6 +75,12 @@ class SoundEffect {
 		if( paused ) {
 			paused = false;
 			play();
+		}
+	}
+
+	public function stop( when = 0.0 ) {
+		if( isPlaying ) {
+			source.stop( when );
 		}
 	}
 

@@ -3,3 +3,4 @@ examples/*/app.js*
 *.wav
 *.mp3
 *.ogg
+haxedoc.xml

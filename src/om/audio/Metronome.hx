@@ -9,6 +9,8 @@ typedef Note = {
 }
 
 /**
+    Rock-Solid Timing by looking ahead.
+
     http://www.html5rocks.com/en/tutorials/audio/scheduling/
 */
 class Metronome {
@@ -78,9 +80,9 @@ class Metronome {
         notesInQueue.push( { note: beatNumber, time: time } );
 
         if( noteResolution == 1 && beatNumber % 2 == 0 )
-            return; // we're not playing non-8th 16th notes
+            return; // do not play non-8th 16th notes
         if( noteResolution == 2 && beatNumber % 4 == 0 )
-            return; // we're not playing non-quarter 8th notes
+            return; // do not play non-quarter 8th notes
 
 		onTick( beatNumber, time );
     }

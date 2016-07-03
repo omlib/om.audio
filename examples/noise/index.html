@@ -1,36 +1,68 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <title>om.audio.metronome</title>
-		<style media="screen">
-			body {
-				font-family: monospace;
-				background: #181818;
-				color: #313131;
-				cursor: default;
-			}
-			div.noise {
-				font-size: 20px;
-				cursor: pointer;
-				text-decoration: line-through;
-			}
-			#white.noise {
-				color: white;
-			}
-			#pink.noise {
-				color: pink;
-			}
-			#brown.noise {
-				color: #9d550f;
-			}
-		</style>
-        <script src="app.js" defer></script>
-    </head>
-    <body>
-        <span id="white" class="noise">White</span>
-        <span id="pink" class="noise">Pink</span>
-        <span id="brown" class="noise">Brown</span>
+<head>
+
+	<meta charset="utf-8">
+
+	<title>om.audio.noise</title>
+
+	<style media="screen">
+		body {
+            margin: 0;
+            overflow: hidden;
+			font-family: monospace;
+			font-size: 11px;
+			background: #181818;
+			color: #313131;
+			cursor: default;
+		}
+
+        canvas#spectrum {
+            position: fixed;
+            z-index: 0;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+        }
+
+        #noises {
+            position: fixed;
+            z-index: 1;
+			top: 10px;
+			left: 10px;
+        }
+
+		#noises .noise {
+			cursor: pointer;
+			text-decoration: line-through;
+			-webkit-user-select: none;
+            -moz-user-select: none;
+		}
+
+		#noises #white.noise {
+			color: white;
+		}
+
+		#noises #pink.noise {
+			color: pink;
+		}
+
+		#noises #brown.noise {
+			color: #9d550f;
+		}
+	</style>
+
+	<script src="app.js" defer></script>
+
+</head>
+
+<body>
+	<canvas id="spectrum"></canvas>
+	<div id="noises">
+		<span id="white" class="noise">White</span>
+		<span id="pink" class="noise">Pink</span>
+		<span id="brown" class="noise">Brown</span>
 		<span>Noise</span>
-    </body>
+	</div>
+</body>
+
 </html>
