@@ -1,0 +1,9 @@
+--no-output
+-cp src
+-lib om.core
+--each
+
+--next
+-js x
+-xml doc/js.xml
+--macro include("om.audio",true)
