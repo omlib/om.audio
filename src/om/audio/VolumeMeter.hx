@@ -8,13 +8,25 @@ import js.html.audio.ScriptProcessorNode;
 
 class VolumeMeter {
 
+	/***/
 	public var processor(default,null) : ScriptProcessorNode;
+
+	/***/
 	public var rms(default,null) : Float;
+
+	/***/
 	public var vol(default,null) : Float;
+
+	/***/
 	public var dec(default,null) : Float;
 
+	/** The level (0 to 1) considered "clipping". */
 	public var clipLevel : Float;
+
+	/** */
 	public var averaging : Float;
+
+	/** How long you would like the "clipping" indicator to show after clipping has occured, in milliseconds.  Defaults to 750ms. */
 	public var clipLag : Int;
 
 	public function new( audio : AudioContext, bufferSize = 512,
@@ -43,10 +55,9 @@ class VolumeMeter {
 			rms = Math.sqrt( sum / buf.length );
 			vol = Math.max( rms, vol * averaging );
 
-			dec = 10 * log10( vol );
+			dec = 10 * Math.log10( vol );
 		};
 
-		/*
 		//TODO
 		untyped processor.checkClipping = function(){
 			if( !clipping )
@@ -55,13 +66,8 @@ class VolumeMeter {
 				clipping = false;
 			return clipping;
 		};
-		*/
 
         processor.connect( audio.destination );
-	}
-
-	static function log10( v : Float ) : Float{
-    	return Math.log(v) / Math.LN10;
 	}
 
 }
