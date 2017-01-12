@@ -15,10 +15,10 @@ class VolumeMeter {
 	public var rms(default,null) : Float;
 
 	/***/
-	public var vol(default,null) : Float;
+	public var volume(default,null) : Float;
 
 	/***/
-	public var dec(default,null) : Float;
+	public var decibel(default,null) : Float;
 
 	/** The level (0 to 1) considered "clipping". */
 	public var clipLevel : Float;
@@ -40,31 +40,34 @@ class VolumeMeter {
 		var lastClip = 0.0;
 
 		processor = audio.createScriptProcessor( bufferSize );
+
+		//TODO
+		untyped processor.checkClipping = function(){
+			if( !clipping )
+				return false;
+			if( (lastClip + clipLag) < window.performance.now() )
+				clipping = false;
+			return clipping;
+		};
+
+		var buf : AudioBuffer;
+		var sum = 0.0;
+		var x : Float;
+
 		processor.onaudioprocess = function(e){
-			var buf = e.inputBuffer.getChannelData(0);
-			var sum = 0.0;
-			var x : Float;
+			buf = e.inputBuffer.getChannelData(0);
+			sum = 0.0;
 			for( i in 0...buf.length ) {
 				untyped x = buf[i];
-				if( Math.abs(x) >= clipLevel ) {
+				if( Math.abs( x ) >= clipLevel ) {
 					clipping = true;
 					lastClip = window.performance.now();
 				}
 				sum += x * x;
 			}
 			rms = Math.sqrt( sum / buf.length );
-			vol = Math.max( rms, vol * averaging );
-
-			dec = 10 * Math.log10( vol );
-		};
-
-		//TODO
-		untyped processor.checkClipping = function(){
-			if( !clipping )
-				return false;
-			if( (lastClip + clipLag) < window.performance.now())
-				clipping = false;
-			return clipping;
+			volume = Math.max( rms, volume * averaging );
+			decibel = Decibel.calculate( volume );
 		};
 
         processor.connect( audio.destination );
