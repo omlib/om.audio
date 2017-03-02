@@ -9,9 +9,9 @@ class PeakMeter {
     /**
         Compute the max and min value of the waveform when broken into <length> subranges.
     */
-    public static function getPeaks( buf : AudioBuffer, numSubRanges : Int ) : Array<Array<Float>> {
+    public static function getPeaks( buf : AudioBuffer, length : Int ) : Array<Array<Float>> {
         //var sampleSize = buf.length / length;
-        var sampleSize = Std.int( buf.length / numSubRanges );
+        var sampleSize = Std.int( buf.length / length );
         //var sampleStep = Std.int( ~~(sampleSize / 10) );
         var sampleStep = Std.int( ~~( Std.int( sampleSize / 10 ) ) );
         var channels = buf.numberOfChannels;
@@ -19,7 +19,7 @@ class PeakMeter {
         for( c in 0...channels ) {
             var peaks = splitPeaks[c] = [];
             var chan = buf.getChannelData(c);
-            for( i in 0...numSubRanges ) {
+            for( i in 0...length ) {
                 //var start = Std.int( ~~(i * sampleSize) );
                 var start = Std.int( ~~( Std.int( i * sampleSize ) ) );
                 var end = ~~( start + sampleSize);
@@ -44,9 +44,6 @@ class PeakMeter {
     public static function getMergedPeaks( buf : AudioBuffer, length : Int ) : Array<Float> {
         //var sampleSize = buf.length / length;
         var sampleSize = Std.int( buf.length / length );
-
-        trace(sampleSize);
-
         //var sampleStep = Std.int( ~~(sampleSize / 10) );
         var sampleStep = Std.int( ~~( Std.int( sampleSize / 10 ) ) );
         var channels = buf.numberOfChannels;
@@ -103,10 +100,4 @@ class PeakMeter {
         }
         return peaks;
     }
-
-    /*
-    public static inline function detectPeaks( data : Float32Array, threshold : Float, skipForward = 11025 ) {
-        return BeatDetection.getPeaks( data, threshold, skipForward );
-    }
-    */
 }
