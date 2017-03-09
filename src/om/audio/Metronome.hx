@@ -35,7 +35,7 @@ class Metronome {
     var current16thNote : Int;
     var nextNoteTime : Float;
 
-    public function new( context : AudioContext, tempo : Float,
+    public function new( ?workerScript = "metronomeworker.js", context : AudioContext, tempo : Float,
                          scheduleAheadTime = 0.1, noteLength = 0.05, lookahead = 25.0 ) {
 
         this.context = context;
@@ -48,7 +48,7 @@ class Metronome {
         notesInQueue = [];
         nextNoteTime = 0.0;
 
-        worker = new Worker( "metronomeworker.js" );
+        worker = new Worker( workerScript );
         worker.onmessage = function(e) {
             if( e.data == WORKER_MSG_TICK ) {
                 scheduler();
@@ -58,7 +58,7 @@ class Metronome {
         worker.postMessage( { interval:lookahead } );
     }
 
-    public function play() {
+    public function start() {
         current16thNote = 0;
         nextNoteTime = context.currentTime;
         worker.postMessage( WORKER_MSG_START );
