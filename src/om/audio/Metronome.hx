@@ -1,7 +1,7 @@
 package om.audio;
 
-import js.html.Worker;
 import js.html.audio.AudioContext;
+import om.Worker;
 
 typedef Note = {
     var note : Float;
@@ -15,14 +15,14 @@ typedef Note = {
 */
 class Metronome {
 
-    static inline var WORKER_MSG_START = 0;
-    static inline var WORKER_MSG_STOP = 1;
-    static inline var WORKER_MSG_TICK = 2;
+    public static inline var WORKER_MSG_START = 0;
+    public static inline var WORKER_MSG_STOP = 1;
+    public static inline var WORKER_MSG_TICK = 2;
 
-	public dynamic function onTick( beatNumber : Int, time : Float ) {}
+	public dynamic function onTick( n : Int, time : Float ) {}
 
-    public var tempo : Float; // BPM
     public var isPlaying(default,null) : Bool;
+    public var tempo : Float; // BPM
     public var scheduleAheadTime = 0.1;
     public var noteLength = 0.05;
     public var noteResolution = 0;
@@ -35,7 +35,7 @@ class Metronome {
     var current16thNote : Int;
     var nextNoteTime : Float;
 
-    public function new( ?workerScript = "metronomeworker.js", context : AudioContext, tempo : Float,
+    public function new( context : AudioContext, tempo : Float,
                          scheduleAheadTime = 0.1, noteLength = 0.05, lookahead = 25.0 ) {
 
         this.context = context;
@@ -48,25 +48,43 @@ class Metronome {
         notesInQueue = [];
         nextNoteTime = 0.0;
 
-        worker = new Worker( workerScript );
+        worker = Worker.fromScript( 'var timerID=null;
+        var interval=100;
+        const WORKER_MSG_START=0;
+        const WORKER_MSG_STOP=1;
+        const WORKER_MSG_TICK=2;
+        self.onmessage=function(e){
+        	if(e.data==WORKER_MSG_START){
+        		timerID = setInterval(function(){postMessage(WORKER_MSG_TICK);},interval)
+            } else if(e.data==WORKER_MSG_STOP){
+                clearInterval(timerID);
+                timerID=null;
+        	} else if(e.data.interval){
+        		interval=e.data.interval;
+        		if(timerID){
+        			clearInterval(timerID);
+        			timerID=setInterval(function(){postMessage(WORKER_MSG_TICK);},interval);
+        		}
+            }
+        };
+' );
         worker.onmessage = function(e) {
-            if( e.data == WORKER_MSG_TICK ) {
+            if( e.data == WORKER_MSG_TICK )
                 scheduler();
-            } else
-                trace( "message: " + e.data );
+            //else trace( "message: " + e.data );
         }
-        worker.postMessage( { interval:lookahead } );
+        worker.postMessage( { interval:lookahead }, [] );
     }
 
     public function start() {
         current16thNote = 0;
         nextNoteTime = context.currentTime;
-        worker.postMessage( WORKER_MSG_START );
+        worker.postMessage( WORKER_MSG_START, [] );
         isPlaying = true;
     }
 
     public function stop() {
-        worker.postMessage( WORKER_MSG_STOP );
+        worker.postMessage( WORKER_MSG_STOP, [] );
         isPlaying = false;
     }
 
