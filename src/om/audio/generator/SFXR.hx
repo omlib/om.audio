@@ -14,10 +14,11 @@ typedef Params = {
 
     @:optional var wave_type : Shape;
 
-    @:optional var base_freq : Float;
+    @:optional var freq_base : Float;
 	@:optional var freq_limit : Float;
 	@:optional var freq_ramp : Float;
 	@:optional var freq_dramp : Float;
+
 	@:optional var duty : Float;
 	@:optional var duty_ramp : Float;
 
@@ -33,6 +34,7 @@ typedef Params = {
 	@:optional var lpf_resonance : Float;
 	@:optional var lpf_freq : Float;
 	@:optional var lpf_ramp : Float;
+
 	@:optional var hpf_freq : Float;
 	@:optional var hpf_ramp : Float;
 
@@ -41,17 +43,17 @@ typedef Params = {
 
 	@:optional var repeat_speed : Float;
 
-	@:optional var arp_speed: Float;
-	@:optional var arp_mod: Float;
+	@:optional var arp_speed : Float;
+	@:optional var arp_mod : Float;
 
     @:optional var volume : Float;
 }
 
 class SFXR {
 
-    public function new() {}
+    //public function new() {}
 
-    public function generate( desc : Params ) : Array<Float> {
+    public static function generate( params : Params ) : Array<Float> {
 
         var phase = 0;
     	var fperiod = 0.0;
@@ -65,31 +67,31 @@ class SFXR {
         // reset filter
     	var fltp = 0.0;
     	var fltdp = 0.0;
-    	var fltw = Math.pow( desc.lpf_freq, 3.0) * 0.1;
-    	var fltw_d = 1.0 + desc.lpf_ramp * 0.0001;
-    	var fltdmp = 5.0 / (1.0 + Math.pow(desc.lpf_resonance, 2.0) * 20.0) * (0.01 + fltw);
+    	var fltw = Math.pow( params.lpf_freq, 3.0) * 0.1;
+    	var fltw_d = 1.0 + params.lpf_ramp * 0.0001;
+    	var fltdmp = 5.0 / (1.0 + Math.pow( params.lpf_resonance, 2.0 ) * 20.0 ) * (0.01 + fltw);
     	if( fltdmp > 0.8 ) fltdmp = 0.8;
     	var fltphp = 0.0;
-    	var flthp = Math.pow(desc.hpf_freq, 2.0) * 0.1;
-    	var flthp_d = 1.0 + desc.hpf_ramp * 0.0003;
+    	var flthp = Math.pow(params.hpf_freq, 2.0) * 0.1;
+    	var flthp_d = 1.0 + params.hpf_ramp * 0.0003;
     	// reset vibrato
     	var vib_phase = 0.0;
-    	var vib_speed = Math.pow(desc.vib_speed, 2.0) * 0.01;
-    	var vib_amp = desc.vib_strength * 0.5;
+    	var vib_speed = Math.pow( params.vib_speed, 2.0) * 0.01;
+    	var vib_amp = params.vib_strength * 0.5;
     	// reset envelope
     	var env_vol = 0.0;
     	var env_stage = 0;
     	var env_time = 0;
     	var env_length = [
-    		Math.round( desc.env_attack * desc.env_attack * 100000.0 ),
-    		Math.round( desc.env_sustain * desc.env_sustain * 100000.0 ),
-    		Math.round( desc.env_decay * desc.env_decay * 100000.0 )
+    		Math.round( params.env_attack * params.env_attack * 100000.0 ),
+    		Math.round( params.env_sustain * params.env_sustain * 100000.0 ),
+    		Math.round( params.env_decay * params.env_decay * 100000.0 )
     	];
 
-        var fphase = Math.pow( desc.pha_offset, 2.0 ) * 1020.0;
-    	if( desc.pha_offset < 0.0 ) fphase = -fphase;
-    	var fdphase = Math.pow( desc.pha_ramp, 2.0 ) * 1.0;
-    	if( desc.pha_ramp < 0.0 ) fdphase = -fdphase;
+        var fphase = Math.pow( params.pha_offset, 2.0 ) * 1020.0;
+    	if( params.pha_offset < 0.0 ) fphase = -fphase;
+    	var fdphase = Math.pow( params.pha_ramp, 2.0 ) * 1.0;
+    	if( params.pha_ramp < 0.0 ) fdphase = -fdphase;
     	var iphase = Math.abs( Math.round( fphase ) );
     	var ipp = 0;
 
@@ -97,29 +99,29 @@ class SFXR {
     	var noise_buffer = [for( i in 0...32 ) Math.random() * 2.0 - 1.0];
 
     	var rep_time = 0;
-    	var rep_limit = Math.round( Math.pow( 1.0 - desc.repeat_speed, 2.0 ) * 20000 + 32 );
-    	if( desc.repeat_speed == 0.0 ) rep_limit = 0;
+    	var rep_limit = Math.round( Math.pow( 1.0 - params.repeat_speed, 2.0 ) * 20000 + 32 );
+    	if( params.repeat_speed == 0.0 ) rep_limit = 0;
 
     	var arp_time = 0;
     	var arp_limit = 0;
     	var arp_mod = 0.0;
 
         function restart() {
-            fperiod = 100.0 / ( desc.base_freq * desc.base_freq + 0.001 );
+            fperiod = 100.0 / ( params.freq_base * params.freq_base + 0.001 );
             period = Math.round( fperiod );
-            fmaxperiod = 100.0 / ( desc.freq_limit * desc.freq_limit + 0.001 );
-            fslide = 1.0 - Math.pow( desc.freq_ramp, 3.0 ) * 0.01;
-            fdslide = - Math.pow( desc.freq_dramp, 3.0 ) * 0.000001;
-            square_duty = 0.5 - desc.duty * 0.5;
-            square_slide = -desc.duty_ramp * 0.00005;
-            if( desc.arp_mod >= 0.0 ) {
-                arp_mod = 1.0 - Math.pow( desc.arp_mod, 2.0 ) * 0.9;
+            fmaxperiod = 100.0 / ( params.freq_limit * params.freq_limit + 0.001 );
+            fslide = 1.0 - Math.pow( params.freq_ramp, 3.0 ) * 0.01;
+            fdslide = - Math.pow( params.freq_dramp, 3.0 ) * 0.000001;
+            square_duty = 0.5 - params.duty * 0.5;
+            square_slide = -params.duty_ramp * 0.00005;
+            if( params.arp_mod >= 0.0 ) {
+                arp_mod = 1.0 - Math.pow( params.arp_mod, 2.0 ) * 0.9;
             } else {
-                arp_mod = 1.0 + Math.pow( desc.arp_mod, 2.0 ) * 10.0;
+                arp_mod = 1.0 + Math.pow( params.arp_mod, 2.0 ) * 10.0;
             }
             arp_time = 0;
-            arp_limit = Math.round( Math.pow( 1.0 - desc.arp_speed, 2.0 ) * 20000 + 32 );
-            if( desc.arp_speed == 1.0 ) {
+            arp_limit = Math.round( Math.pow( 1.0 - params.arp_speed, 2.0 ) * 20000 + 32 );
+            if( params.arp_speed == 1.0 ) {
                 arp_limit = 0;
             }
         }
@@ -149,7 +151,7 @@ class SFXR {
     		fperiod *= fslide;
     		if( fperiod > fmaxperiod ) {
     			fperiod = fmaxperiod;
-    			if( desc.freq_limit > 0.0 ) {
+    			if( params.freq_limit > 0.0 ) {
     				synthesizing = false;
     			}
     		}
@@ -181,7 +183,7 @@ class SFXR {
     			env_vol = env_time / env_length[0];
     		}
     		if( env_stage == 1 ) {
-    			env_vol = 1.0 + Math.pow( 1.0 - env_time / env_length[1], 1.0 ) * 2.0 * desc.env_punch;
+    			env_vol = 1.0 + Math.pow( 1.0 - env_time / env_length[1], 1.0 ) * 2.0 * params.env_punch;
     		}
     		if( env_stage == 2 ) {
     			env_vol = 1.0 - env_time / env_length[2];
@@ -208,7 +210,7 @@ class SFXR {
     			if( phase >= period ) {
     				//phase = 0;
     				phase %= period;
-    				if( desc.wave_type == Shape.Noise ) {
+    				if( params.wave_type == Shape.Noise ) {
                         for( i in 0...32 ) {
     						noise_buffer[i] = Math.random() * 2.0 - 1.0;
     					}
@@ -218,7 +220,7 @@ class SFXR {
     			// base waveform
     			var fp = phase / period;
 
-    			sample = switch desc.wave_type {
+    			sample = switch params.wave_type {
     				case 0: (fp < square_duty) ? 0.5 : -0.5;
     				case 1: 1.0 - fp * 2;
     				case 2: Math.sin(fp * 2 * Math.PI);
@@ -230,7 +232,7 @@ class SFXR {
     			fltw *= fltw_d;
     			if( fltw < 0.0 ) fltw = 0.0;
     			if( fltw > 0.1 ) fltw = 0.1;
-    			if( desc.lpf_freq != 1.0 ) {
+    			if( params.lpf_freq != 1.0 ) {
     				fltdp += (sample - fltp) * fltw;
     				fltdp -= fltdp * fltdmp;
     			}
@@ -255,7 +257,7 @@ class SFXR {
     			ssample += sample * env_vol;
             }
 
-            ssample = ssample / 8 * 2.0 * desc.volume;
+            ssample = ssample / 8 * 2.0 * params.volume;
 
             if( ssample > 1.0 ) ssample = 1.0;
             if( ssample < -1.0 ) ssample = -1.0;
@@ -267,250 +269,250 @@ class SFXR {
     }
 
     public static function generatePickupCoin() {
-        var desc = makeDescriptor();
-        desc.base_freq = 0.4 + frnd( 0.5 );
-        desc.env_attack = 0.0;
-        desc.env_sustain = frnd( 0.1 );
-        desc.env_decay = 0.1 + frnd( 0.4 );
-        desc.env_punch = 0.3 + frnd( 0.3 );
-        return desc;
+        var params = makeParams();
+        params.freq_base = 0.4 + frnd( 0.5 );
+        params.env_attack = 0.0;
+        params.env_sustain = frnd( 0.1 );
+        params.env_decay = 0.1 + frnd( 0.4 );
+        params.env_punch = 0.3 + frnd( 0.3 );
+        return params;
     }
 
     public static function generatePowerup() {
-        var desc = makeDescriptor();
+        var params = makeParams();
     	if( rnd( 1 ) > 0 ) {
-    		desc.wave_type = Shape.Sawtooth;
+    		params.wave_type = Shape.Sawtooth;
     	} else {
-    		desc.duty = frnd( 0.6 );
+    		params.duty = frnd( 0.6 );
     	}
     	if( rnd( 1 ) > 0 ) {
-    		desc.base_freq = 0.2 + frnd( 0.3 );
-    		desc.freq_ramp = 0.1 + frnd( 0.4 );
-    		desc.repeat_speed = 0.4 + frnd( 0.4 );
-    	}
-    	else {
-    		desc.base_freq = 0.2 + frnd( 0.3 );
-    		desc.freq_ramp = 0.05 + frnd( 0.2 );
+    		params.freq_base = 0.2 + frnd( 0.3 );
+    		params.freq_ramp = 0.1 + frnd( 0.4 );
+    		params.repeat_speed = 0.4 + frnd( 0.4 );
+    	} else {
+    		params.freq_base = 0.2 + frnd( 0.3 );
+    		params.freq_ramp = 0.05 + frnd( 0.2 );
     		if( rnd( 1 ) > 0 ) {
-    			desc.vib_strength = frnd( 0.7 );
-    			desc.vib_speed = frnd( 0.6 );
+    			params.vib_strength = frnd( 0.7 );
+    			params.vib_speed = frnd( 0.6 );
     		}
     	}
-    	desc.env_attack = 0.0;
-    	desc.env_sustain = frnd( 0.4 );
-    	desc.env_decay = 0.1 + frnd( 0.4 );
-    	return desc;
+    	params.env_attack = 0.0;
+    	params.env_sustain = frnd( 0.4 );
+    	params.env_decay = 0.1 + frnd( 0.4 );
+    	return params;
     }
 
     public static function generateLaserShoot() {
-        var desc = makeDescriptor();
-    	desc.wave_type = pick( [ Shape.Square, Shape.Sawtooth, Shape.Sine ] );
-    	if( desc.wave_type == Shape.Sine && rnd( 1 ) > 0 ) {
-    		desc.wave_type = pick( [Shape.Square, Shape.Sawtooth] );
+        var params = makeParams();
+    	params.wave_type = pick( [ Shape.Square, Shape.Sawtooth, Shape.Sine ] );
+    	if( params.wave_type == Shape.Sine && rnd( 1 ) > 0 ) {
+    		params.wave_type = pick( [Shape.Square, Shape.Sawtooth] );
     	}
-    	desc.base_freq = 0.5 + frnd( 0.5 );
-    	desc.freq_limit = desc.base_freq - 0.2 - frnd( 0.6 );
-    	if( desc.freq_limit < 0.2 ) {
-    		desc.freq_limit = 0.2;
+    	params.freq_base = 0.5 + frnd( 0.5 );
+    	params.freq_limit = params.freq_base - 0.2 - frnd( 0.6 );
+    	if( params.freq_limit < 0.2 ) {
+    		params.freq_limit = 0.2;
     	}
-    	desc.freq_ramp = -0.15 - frnd( 0.2 );
+    	params.freq_ramp = -0.15 - frnd( 0.2 );
     	if( rnd( 2 ) == 0 ) {
-    		desc.base_freq = 0.3 + frnd( 0.6 );
-    		desc.freq_limit = frnd( 0.1 );
-    		desc.freq_ramp = -0.35 - frnd( 0.3 );
+    		params.freq_base = 0.3 + frnd( 0.6 );
+    		params.freq_limit = frnd( 0.1 );
+    		params.freq_ramp = -0.35 - frnd( 0.3 );
     	}
     	if( rnd( 1 ) > 0 ) {
-    		desc.duty = frnd( 0.5 );
-    		desc.duty_ramp = frnd( 0.2 );
+    		params.duty = frnd( 0.5 );
+    		params.duty_ramp = frnd( 0.2 );
     	}
     	else {
-    		desc.duty = 0.4 + frnd( 0.5 );
-    		desc.duty_ramp = -frnd( 0.7 );
+    		params.duty = 0.4 + frnd( 0.5 );
+    		params.duty_ramp = -frnd( 0.7 );
     	}
-    	desc.env_attack = 0.0;
-    	desc.env_sustain = 0.1 + frnd( 0.2 );
-    	desc.env_decay = frnd( 0.4 );
+    	params.env_attack = 0.0;
+    	params.env_sustain = 0.1 + frnd( 0.2 );
+    	params.env_decay = frnd( 0.4 );
     	if( rnd( 1 ) > 0 ) {
-    		desc.env_punch = frnd( 0.3 );
+    		params.env_punch = frnd( 0.3 );
     	}
     	if( rnd( 2 ) == 0 ) {
-    		desc.pha_offset = frnd( 0.2 );
-    		desc.pha_ramp = -frnd( 0.2 );
+    		params.pha_offset = frnd( 0.2 );
+    		params.pha_ramp = -frnd( 0.2 );
     	}
     	if( rnd( 1 ) > 0 ) {
-    		desc.hpf_freq = frnd( 0.3 );
+    		params.hpf_freq = frnd( 0.3 );
     	}
-    	return desc;
+    	return params;
     }
 
     public static function generateExplosion() {
-        var desc = makeDescriptor();
-    	desc.wave_type = Shape.Noise;
+        var params = makeParams();
+    	params.wave_type = Shape.Noise;
     	if( rnd( 1 ) > 0 ) {
-    		desc.base_freq = 0.1 + frnd( 0.4 );
-    		desc.freq_ramp = -0.1 + frnd( 0.4 );
+    		params.freq_base = 0.1 + frnd( 0.4 );
+    		params.freq_ramp = -0.1 + frnd( 0.4 );
     	} else {
-    		desc.base_freq = 0.2 + frnd( 0.7 );
-    		desc.freq_ramp = -0.2 - frnd( 0.2 );
+    		params.freq_base = 0.2 + frnd( 0.7 );
+    		params.freq_ramp = -0.2 - frnd( 0.2 );
     	}
-    	desc.base_freq *= desc.base_freq;
+    	params.freq_base *= params.freq_base;
     	if( rnd( 4 ) == 0 ) {
-    		desc.freq_ramp = 0.0;
+    		params.freq_ramp = 0.0;
     	}
     	if( rnd( 2 ) == 0 ) {
-    		desc.repeat_speed = 0.3 + frnd( 0.5 );
+    		params.repeat_speed = 0.3 + frnd( 0.5 );
     	}
-    	desc.env_attack = 0.0;
-    	desc.env_sustain = 0.1 + frnd( 0.3 );
-    	desc.env_decay = frnd( 0.5 );
+    	params.env_attack = 0.0;
+    	params.env_sustain = 0.1 + frnd( 0.3 );
+    	params.env_decay = frnd( 0.5 );
     	if( rnd( 1 ) == 0 ) {
-    		desc.pha_offset = -0.3 + frnd( 0.9 );
-    		desc.pha_ramp = -frnd( 0.3 );
+    		params.pha_offset = -0.3 + frnd( 0.9 );
+    		params.pha_ramp = -frnd( 0.3 );
     	}
-    	desc.env_punch = 0.2 + frnd( 0.6 );
+    	params.env_punch = 0.2 + frnd( 0.6 );
     	if( rnd( 1 ) > 0 ) {
-    		desc.vib_strength = frnd( 0.7 );
-    		desc.vib_speed = frnd( 0.6 );
+    		params.vib_strength = frnd( 0.7 );
+    		params.vib_speed = frnd( 0.6 );
     	}
     	if( rnd( 2 ) == 0 ) {
-    		desc.arp_speed = 0.6 + frnd( 0.3 );
-    		desc.arp_mod = 0.8 - frnd( 1.6 );
+    		params.arp_speed = 0.6 + frnd( 0.3 );
+    		params.arp_mod = 0.8 - frnd( 1.6 );
     	}
-    	return desc;
+    	return params;
     }
 
     public static function generateHitHurt() {
-        var desc = makeDescriptor();
-    	desc.wave_type = pick([Shape.Square, Shape.Sawtooth, Shape.Noise]);
-    	if( desc.wave_type == 0 ) {
-    		desc.duty = frnd( 0.6 );
+        var params = makeParams();
+    	params.wave_type = pick([Shape.Square, Shape.Sawtooth, Shape.Noise]);
+    	if( params.wave_type == 0 ) {
+    		params.duty = frnd( 0.6 );
     	}
-    	desc.base_freq = 0.2 + frnd( 0.6 );
-    	desc.freq_ramp = -0.3 - frnd( 0.4 );
-    	desc.env_attack = 0.0;
-    	desc.env_sustain = frnd( 0.1 );
-    	desc.env_decay = 0.1 + frnd( 0.2 );
+    	params.freq_base = 0.2 + frnd( 0.6 );
+    	params.freq_ramp = -0.3 - frnd( 0.4 );
+    	params.env_attack = 0.0;
+    	params.env_sustain = frnd( 0.1 );
+    	params.env_decay = 0.1 + frnd( 0.2 );
     	if( rnd( 1 ) > 0 ) {
-    		desc.hpf_freq = frnd( 0.3 );
+    		params.hpf_freq = frnd( 0.3 );
     	}
-
-    	return desc;
+    	return params;
     }
 
     public static function generateJump() {
-        var desc = makeDescriptor();
-    	desc.wave_type = Shape.Square;
-    	desc.duty = frnd(0.6);
-    	desc.base_freq = 0.3 + frnd(0.3);
-    	desc.freq_ramp = 0.1 + frnd(0.2);
-    	desc.env_attack = 0.0;
-    	desc.env_sustain = 0.1 + frnd(0.3);
-    	desc.env_decay = 0.1 + frnd(0.2);
+        var params = makeParams();
+    	params.wave_type = Shape.Square;
+    	params.duty = frnd(0.6);
+    	params.freq_base = 0.3 + frnd(0.3);
+    	params.freq_ramp = 0.1 + frnd(0.2);
+    	params.env_attack = 0.0;
+    	params.env_sustain = 0.1 + frnd(0.3);
+    	params.env_decay = 0.1 + frnd(0.2);
     	if( rnd(1) > 0 ) {
-    		desc.hpf_freq = frnd(0.3);
+    		params.hpf_freq = frnd(0.3);
     	}
     	if( rnd(1) > 0 ) {
-    		desc.lpf_freq = 1.0 - frnd(0.6);
+    		params.lpf_freq = 1.0 - frnd(0.6);
     	}
-    	return desc;
+    	return params;
     }
 
     public static function generateBlipSelect() {
-        var desc = makeDescriptor();
-    	desc.wave_type = rnd(1);
-    	if( desc.wave_type == Shape.Square ) {
-    		desc.duty = frnd( 0.6 );
+        var params = makeParams();
+    	params.wave_type = rnd(1);
+    	if( params.wave_type == Shape.Square ) {
+    		params.duty = frnd( 0.6 );
     	}
-    	desc.base_freq = 0.2 + frnd( 0.4 );
-    	desc.env_attack = 0.0;
-    	desc.env_sustain = 0.1 + frnd( 0.1 );
-    	desc.env_decay = frnd( 0.2 );
-    	desc.hpf_freq = 0.1;
-    	return desc;
+    	params.freq_base = 0.2 + frnd( 0.4 );
+    	params.env_attack = 0.0;
+    	params.env_sustain = 0.1 + frnd( 0.1 );
+    	params.env_decay = frnd( 0.2 );
+    	params.hpf_freq = 0.1;
+    	return params;
     }
 
     public static function generateRandom() {
-        var desc = makeDescriptor();
-    	desc.base_freq = Math.pow(frnd(2.0) - 1.0, 2.0);
+        var params = makeParams();
+    	params.freq_base = Math.pow(frnd(2.0) - 1.0, 2.0);
     	if (rnd(1)>0) {
-    		desc.base_freq = Math.pow(frnd(2.0) - 1.0, 3.0) + 0.5;
+    		params.freq_base = Math.pow(frnd(2.0) - 1.0, 3.0) + 0.5;
     	}
-    	desc.freq_limit = 0.0;
-    	desc.freq_ramp = Math.pow(frnd(2.0) - 1.0, 5.0);
-    	if (desc.base_freq > 0.7 && desc.freq_ramp > 0.2) {
-    		desc.freq_ramp = -desc.freq_ramp;
+    	params.freq_limit = 0.0;
+    	params.freq_ramp = Math.pow(frnd(2.0) - 1.0, 5.0);
+    	if (params.freq_base > 0.7 && params.freq_ramp > 0.2) {
+    		params.freq_ramp = -params.freq_ramp;
     	}
-    	if (desc.base_freq < 0.2 && desc.freq_ramp < -0.05) {
-    		desc.freq_ramp = -desc.freq_ramp;
+    	if (params.freq_base < 0.2 && params.freq_ramp < -0.05) {
+    		params.freq_ramp = -params.freq_ramp;
     	}
-    	desc.freq_dramp = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	desc.duty = frnd(2.0) - 1.0;
-    	desc.duty_ramp = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	desc.vib_strength = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	desc.vib_speed = frnd(2.0) - 1.0;
-    	desc.vib_delay = frnd(2.0) - 1.0;
-    	desc.env_attack = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	desc.env_sustain = Math.pow(frnd(2.0) - 1.0, 2.0);
-    	desc.env_decay = frnd(2.0) - 1.0;
-    	desc.env_punch = Math.pow(frnd(0.8), 2.0);
-    	if (desc.env_attack + desc.env_sustain + desc.env_decay < 0.2) {
-    		desc.env_sustain += 0.2 + frnd(0.3);
-    		desc.env_decay += 0.2 + frnd(0.3);
+    	params.freq_dramp = Math.pow(frnd(2.0) - 1.0, 3.0);
+    	params.duty = frnd(2.0) - 1.0;
+    	params.duty_ramp = Math.pow(frnd(2.0) - 1.0, 3.0);
+    	params.vib_strength = Math.pow(frnd(2.0) - 1.0, 3.0);
+    	params.vib_speed = frnd(2.0) - 1.0;
+    	params.vib_delay = frnd(2.0) - 1.0;
+    	params.env_attack = Math.pow(frnd(2.0) - 1.0, 3.0);
+    	params.env_sustain = Math.pow(frnd(2.0) - 1.0, 2.0);
+    	params.env_decay = frnd(2.0) - 1.0;
+    	params.env_punch = Math.pow(frnd(0.8), 2.0);
+    	if (params.env_attack + params.env_sustain + params.env_decay < 0.2) {
+    		params.env_sustain += 0.2 + frnd(0.3);
+    		params.env_decay += 0.2 + frnd(0.3);
     	}
-    	desc.lpf_resonance = frnd(2.0) - 1.0;
-    	desc.lpf_freq = 1.0 - Math.pow(frnd(1.0), 3.0);
-    	desc.lpf_ramp = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	if (desc.lpf_freq < 0.1 && desc.lpf_ramp < -0.05) {
-    		desc.lpf_ramp = -desc.lpf_ramp;
+    	params.lpf_resonance = frnd(2.0) - 1.0;
+    	params.lpf_freq = 1.0 - Math.pow(frnd(1.0), 3.0);
+    	params.lpf_ramp = Math.pow(frnd(2.0) - 1.0, 3.0);
+    	if (params.lpf_freq < 0.1 && params.lpf_ramp < -0.05) {
+    		params.lpf_ramp = -params.lpf_ramp;
     	}
-    	desc.hpf_freq = Math.pow(frnd(1.0), 5.0);
-    	desc.hpf_ramp = Math.pow(frnd(2.0) - 1.0, 5.0);
-    	desc.pha_offset = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	desc.pha_ramp = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	desc.repeat_speed = frnd(2.0) - 1.0;
-    	desc.arp_speed = frnd(2.0) - 1.0;
-    	desc.arp_mod = frnd(2.0) - 1.0;
-    	return desc;
+    	params.hpf_freq = Math.pow(frnd(1.0), 5.0);
+    	params.hpf_ramp = Math.pow(frnd(2.0) - 1.0, 5.0);
+    	params.pha_offset = Math.pow(frnd(2.0) - 1.0, 3.0);
+    	params.pha_ramp = Math.pow(frnd(2.0) - 1.0, 3.0);
+    	params.repeat_speed = frnd(2.0) - 1.0;
+    	params.arp_speed = frnd(2.0) - 1.0;
+    	params.arp_mod = frnd(2.0) - 1.0;
+    	return params;
     }
 
     public static function mutate( base : Params ) {
-        var desc = makeDescriptor( base );
-    	if( rnd( 1 ) > 0 ) desc.base_freq += frnd(0.1) - 0.05;
-    	// if (rnd(1)) desc.freq_limit += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.freq_ramp += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.freq_dramp += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.duty += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.duty_ramp += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.vib_strength += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.vib_speed += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.vib_delay += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.env_attack += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.env_sustain += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.env_decay += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.env_punch += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.lpf_resonance += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.lpf_freq += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.lpf_ramp += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.hpf_freq += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.hpf_ramp += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.pha_offset += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.pha_ramp += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.repeat_speed += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.arp_speed += frnd(0.1) - 0.05;
-    	if( rnd( 1 ) > 0 ) desc.arp_mod += frnd(0.1) - 0.05;
-    	return desc;
+        var params = makeParams( base );
+    	if( rndb() ) params.freq_base += frnd( 0.1 ) - 0.05;
+    	// if (rnd(1)) params.freq_limit += frnd(0.1) - 0.05;
+    	if( rndb() ) params.freq_ramp += frnd(0.1) - 0.05;
+    	if( rndb() ) params.freq_dramp += frnd(0.1) - 0.05;
+    	if( rndb() ) params.duty += frnd(0.1) - 0.05;
+    	if( rndb() ) params.duty_ramp += frnd(0.1) - 0.05;
+    	if( rndb() ) params.vib_strength += frnd(0.1) - 0.05;
+    	if( rndb() ) params.vib_speed += frnd(0.1) - 0.05;
+    	if( rndb() ) params.vib_delay += frnd(0.1) - 0.05;
+    	if( rndb() ) params.env_attack += frnd(0.1) - 0.05;
+    	if( rndb() ) params.env_sustain += frnd(0.1) - 0.05;
+    	if( rndb() ) params.env_decay += frnd(0.1) - 0.05;
+    	if( rndb() ) params.env_punch += frnd(0.1) - 0.05;
+    	if( rndb() ) params.lpf_resonance += frnd(0.1) - 0.05;
+    	if( rndb() ) params.lpf_freq += frnd(0.1) - 0.05;
+    	if( rndb() ) params.lpf_ramp += frnd(0.1) - 0.05;
+    	if( rndb() ) params.hpf_freq += frnd(0.1) - 0.05;
+    	if( rndb() ) params.hpf_ramp += frnd(0.1) - 0.05;
+    	if( rndb() ) params.pha_offset += frnd(0.1) - 0.05;
+    	if( rndb() ) params.pha_ramp += frnd(0.1) - 0.05;
+    	if( rndb() ) params.repeat_speed += frnd(0.1) - 0.05;
+    	if( rndb() ) params.arp_speed += frnd(0.1) - 0.05;
+    	if( rndb() ) params.arp_mod += frnd(0.1) - 0.05;
+        trace(params);
+    	return params;
     }
 
-    public static function makeDescriptor( ?base : Params ) : Params {
+    public static function makeParams( ?base : Params ) : Params {
 
-        var desc = {
+        var params = {
 
             wave_type: 0,
 
-            base_freq: 0.3,
+            freq_base: 0.3,
             freq_limit: 0.0,
-
+    		freq_ramp: 0.0,
     		freq_dramp: 0.0,
+
     		duty: 0.0,
     		duty_ramp: 0.0,
 
@@ -542,11 +544,15 @@ class SFXR {
 
         if( base != null ) {
             for( f in Reflect.fields( base ) ) {
-                Reflect.setField( desc, f, Reflect.field( base, f ) );
+                Reflect.setField( params, f, Reflect.field( base, f ) );
             }
         }
 
-        return desc;
+        return params;
+    }
+
+    static inline function rndb( factor = 0.5 ) : Bool {
+        return Math.random() * 1 > (1 - factor);
     }
 
     static inline function rnd( n : Float ) : Int {
