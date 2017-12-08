@@ -1,7 +1,11 @@
 package om.audio.generator;
 
-import js.html.ArrayBuffer;
-import js.html.Float32Array;
+#if macro
+import haxe.macro.Expr;
+using haxe.macro.ExprTools;
+#end
+
+using om.ArrayTools;
 
 @:enum abstract Shape(Int) from Int to Int {
     var Square = 0;
@@ -14,29 +18,31 @@ typedef Params = {
 
     @:optional var wave_type : Shape;
 
+    @:optional var volume : Float;
+
     @:optional var freq_base : Float;
 	@:optional var freq_limit : Float;
 	@:optional var freq_ramp : Float;
 	@:optional var freq_dramp : Float;
-
-	@:optional var duty : Float;
-	@:optional var duty_ramp : Float;
-
-	@:optional var vib_strength : Float;
-	@:optional var vib_speed : Float;
-	@:optional var vib_delay : Float;
 
 	@:optional var env_attack : Float;
 	@:optional var env_sustain : Float;
 	@:optional var env_decay : Float;
 	@:optional var env_punch : Float;
 
+    @:optional var vib_strength : Float;
+    @:optional var vib_speed : Float;
+    @:optional var vib_delay : Float;
+
+    @:optional var duty : Float;
+    @:optional var duty_ramp : Float;
+
+    @:optional var hpf_freq : Float;
+    @:optional var hpf_ramp : Float;
+
 	@:optional var lpf_resonance : Float;
 	@:optional var lpf_freq : Float;
 	@:optional var lpf_ramp : Float;
-
-	@:optional var hpf_freq : Float;
-	@:optional var hpf_ramp : Float;
 
 	@:optional var pha_offset : Float;
 	@:optional var pha_ramp : Float;
@@ -45,15 +51,19 @@ typedef Params = {
 
 	@:optional var arp_speed : Float;
 	@:optional var arp_mod : Float;
-
-    @:optional var volume : Float;
 }
 
 class SFXR {
 
-    //public function new() {}
+    /*
+    macro public static function buildParams( e : ExprOf<Params> ) {
+        trace(e.getValue());
+        var params = SFXR.generateRandom();
+        return macro $v{params};
+    }
+    */
 
-    public static function generate( params : Params ) : Array<Float> {
+    public static function generate( params : Params, ?maxSize : Int ) : Array<Float> {
 
         var phase = 0;
     	var fperiod = 0.0;
@@ -67,17 +77,19 @@ class SFXR {
         // reset filter
     	var fltp = 0.0;
     	var fltdp = 0.0;
-    	var fltw = Math.pow( params.lpf_freq, 3.0) * 0.1;
+    	var fltw = Math.pow( params.lpf_freq, 3.0 ) * 0.1;
     	var fltw_d = 1.0 + params.lpf_ramp * 0.0001;
     	var fltdmp = 5.0 / (1.0 + Math.pow( params.lpf_resonance, 2.0 ) * 20.0 ) * (0.01 + fltw);
     	if( fltdmp > 0.8 ) fltdmp = 0.8;
     	var fltphp = 0.0;
     	var flthp = Math.pow(params.hpf_freq, 2.0) * 0.1;
     	var flthp_d = 1.0 + params.hpf_ramp * 0.0003;
+
     	// reset vibrato
     	var vib_phase = 0.0;
     	var vib_speed = Math.pow( params.vib_speed, 2.0) * 0.01;
     	var vib_amp = params.vib_strength * 0.5;
+
     	// reset envelope
     	var env_vol = 0.0;
     	var env_stage = 0;
@@ -205,8 +217,8 @@ class SFXR {
             for( si in 0...8 ) {
 
                 var sample = 0.0;
-    			phase++;
 
+    			phase++;
     			if( phase >= period ) {
     				//phase = 0;
     				phase %= period;
@@ -235,8 +247,7 @@ class SFXR {
     			if( params.lpf_freq != 1.0 ) {
     				fltdp += (sample - fltp) * fltw;
     				fltdp -= fltdp * fltdmp;
-    			}
-    			else {
+    			} else {
     				fltp = sample;
     				fltdp = 0.0;
     			}
@@ -263,6 +274,10 @@ class SFXR {
             if( ssample < -1.0 ) ssample = -1.0;
 
             samples.push( ssample );
+
+            if( maxSize != null && samples.length >= maxSize ) {
+                return samples;
+            }
         }
 
         return samples;
@@ -391,7 +406,7 @@ class SFXR {
     	params.env_attack = 0.0;
     	params.env_sustain = frnd( 0.1 );
     	params.env_decay = 0.1 + frnd( 0.2 );
-    	if( rnd( 1 ) > 0 ) {
+    	if( rndb() ) {
     		params.hpf_freq = frnd( 0.3 );
     	}
     	return params;
@@ -406,12 +421,8 @@ class SFXR {
     	params.env_attack = 0.0;
     	params.env_sustain = 0.1 + frnd(0.3);
     	params.env_decay = 0.1 + frnd(0.2);
-    	if( rnd(1) > 0 ) {
-    		params.hpf_freq = frnd(0.3);
-    	}
-    	if( rnd(1) > 0 ) {
-    		params.lpf_freq = 1.0 - frnd(0.6);
-    	}
+    	if( rndb() ) params.hpf_freq = frnd(0.3);
+    	if( rndb() ) params.lpf_freq = 1.0 - frnd(0.6);
     	return params;
     }
 
@@ -432,15 +443,15 @@ class SFXR {
     public static function generateRandom() {
         var params = makeParams();
     	params.freq_base = Math.pow(frnd(2.0) - 1.0, 2.0);
-    	if (rnd(1)>0) {
+    	if( rndb() ) {
     		params.freq_base = Math.pow(frnd(2.0) - 1.0, 3.0) + 0.5;
     	}
     	params.freq_limit = 0.0;
-    	params.freq_ramp = Math.pow(frnd(2.0) - 1.0, 5.0);
-    	if (params.freq_base > 0.7 && params.freq_ramp > 0.2) {
+    	params.freq_ramp = Math.pow( frnd( 2.0 ) - 1.0, 5.0 );
+    	if( params.freq_base > 0.7 && params.freq_ramp > 0.2 ) {
     		params.freq_ramp = -params.freq_ramp;
     	}
-    	if (params.freq_base < 0.2 && params.freq_ramp < -0.05) {
+    	if( params.freq_base < 0.2 && params.freq_ramp < -0.05 ) {
     		params.freq_ramp = -params.freq_ramp;
     	}
     	params.freq_dramp = Math.pow(frnd(2.0) - 1.0, 3.0);
@@ -453,14 +464,14 @@ class SFXR {
     	params.env_sustain = Math.pow(frnd(2.0) - 1.0, 2.0);
     	params.env_decay = frnd(2.0) - 1.0;
     	params.env_punch = Math.pow(frnd(0.8), 2.0);
-    	if (params.env_attack + params.env_sustain + params.env_decay < 0.2) {
+    	if( params.env_attack + params.env_sustain + params.env_decay < 0.2 ) {
     		params.env_sustain += 0.2 + frnd(0.3);
     		params.env_decay += 0.2 + frnd(0.3);
     	}
     	params.lpf_resonance = frnd(2.0) - 1.0;
     	params.lpf_freq = 1.0 - Math.pow(frnd(1.0), 3.0);
     	params.lpf_ramp = Math.pow(frnd(2.0) - 1.0, 3.0);
-    	if (params.lpf_freq < 0.1 && params.lpf_ramp < -0.05) {
+    	if( params.lpf_freq < 0.1 && params.lpf_ramp < -0.05 ) {
     		params.lpf_ramp = -params.lpf_ramp;
     	}
     	params.hpf_freq = Math.pow(frnd(1.0), 5.0);
@@ -473,32 +484,31 @@ class SFXR {
     	return params;
     }
 
-    public static function mutate( base : Params ) {
+    public static function mutate( base : Params, factor = 0.1, soft = 0.05, ?selective : Float ) {
         var params = makeParams( base );
-    	if( rndb() ) params.freq_base += frnd( 0.1 ) - 0.05;
-    	// if (rnd(1)) params.freq_limit += frnd(0.1) - 0.05;
-    	if( rndb() ) params.freq_ramp += frnd(0.1) - 0.05;
-    	if( rndb() ) params.freq_dramp += frnd(0.1) - 0.05;
-    	if( rndb() ) params.duty += frnd(0.1) - 0.05;
-    	if( rndb() ) params.duty_ramp += frnd(0.1) - 0.05;
-    	if( rndb() ) params.vib_strength += frnd(0.1) - 0.05;
-    	if( rndb() ) params.vib_speed += frnd(0.1) - 0.05;
-    	if( rndb() ) params.vib_delay += frnd(0.1) - 0.05;
-    	if( rndb() ) params.env_attack += frnd(0.1) - 0.05;
-    	if( rndb() ) params.env_sustain += frnd(0.1) - 0.05;
-    	if( rndb() ) params.env_decay += frnd(0.1) - 0.05;
-    	if( rndb() ) params.env_punch += frnd(0.1) - 0.05;
-    	if( rndb() ) params.lpf_resonance += frnd(0.1) - 0.05;
-    	if( rndb() ) params.lpf_freq += frnd(0.1) - 0.05;
-    	if( rndb() ) params.lpf_ramp += frnd(0.1) - 0.05;
-    	if( rndb() ) params.hpf_freq += frnd(0.1) - 0.05;
-    	if( rndb() ) params.hpf_ramp += frnd(0.1) - 0.05;
-    	if( rndb() ) params.pha_offset += frnd(0.1) - 0.05;
-    	if( rndb() ) params.pha_ramp += frnd(0.1) - 0.05;
-    	if( rndb() ) params.repeat_speed += frnd(0.1) - 0.05;
-    	if( rndb() ) params.arp_speed += frnd(0.1) - 0.05;
-    	if( rndb() ) params.arp_mod += frnd(0.1) - 0.05;
-        trace(params);
+    	if( rndb( selective ) ) params.freq_base += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.freq_limit += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.freq_ramp += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.freq_dramp += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.duty += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.duty_ramp += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.vib_strength += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.vib_speed += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.vib_delay += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.env_attack += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.env_sustain += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.env_decay += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.env_punch += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.lpf_resonance += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.lpf_freq += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.lpf_ramp += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.hpf_freq += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.hpf_ramp += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.pha_offset += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.pha_ramp += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.repeat_speed += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.arp_speed += frnd( factor ) - soft;
+    	if( rndb( selective ) ) params.arp_mod += frnd( factor ) - soft;
     	return params;
     }
 
@@ -564,6 +574,7 @@ class SFXR {
     }
 
     static inline function pick( choices : Array<Any> ) {
-        return choices[Math.floor(Math.random() * choices.length)];
+        return choices.random();
     }
+
 }
