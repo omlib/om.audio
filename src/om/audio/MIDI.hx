@@ -9,6 +9,14 @@ package om.audio;
 class MIDI {
 
     /**
+    */
+    public static function keyCodeToNote( code : Int ) : Int {
+        var note = '1234567890qwertyuiopasdfghjklzxcvbnm'.indexOf( String.fromCharCode( code ).toLowerCase() ) % 18;
+        if( note < 0 ) note = code % 18;
+        return note;
+    }
+
+    /**
         Get the pitch frequency in hz (with custom concert tuning) from a midi number.
 
         The quantity `log2 (ƒ / 440 Hz)` is the number of octaves above the 440-Hz concert A (it is negative if the frequency is below that pitch).
