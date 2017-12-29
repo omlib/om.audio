@@ -1,8 +1,6 @@
-_*
 doc/
-examples/**.js*
-example/**.js*
-test/unit*
+examples/*/app.js*
+test/bin
 *.wav
 *.mp3
 *.ogg
