@@ -1,5 +1,5 @@
 doc/
-examples/*/app.js*
+example/*/app.js*
 test/bin
 *.wav
 *.mp3

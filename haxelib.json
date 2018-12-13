@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "description": "Audio tools",
     "tags": ["om","audio"],
-    "url": "https://github.com/tong/om.audio",
+    "url": "https://github.com/omlib/om.audio",
     "license": "OM",
     "contributors": ["tong"],
     "releasenote": "See CHANGELOG.md",

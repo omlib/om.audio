@@ -1,22 +1,19 @@
 --no-output
 -lib om.audio
+--macro include('om.audio')
 -dce no
 -D doc-gen
 --each
 
 --next
 -js x
---macro include('om.audio')
 -xml doc/js.xml
 
 --next
 -js x
 -lib hxnodejs
---macro include('om.audio')
 -xml doc/node.xml
 
 --next
 -neko x
 -xml doc/neko.xml
-om.audio.Decibel
-om.audio.MIDI
