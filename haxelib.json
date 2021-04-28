@@ -4,7 +4,7 @@
     "description": "Audio tools",
     "tags": ["om","audio"],
     "url": "https://github.com/omlib/om.audio",
-    "license": "OM",
+    "license": "Public",
     "contributors": ["tong"],
     "releasenote": "See CHANGELOG.md",
     "classPath" : "src/",
