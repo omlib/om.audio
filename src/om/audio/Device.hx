@@ -1,10 +1,15 @@
 package om.audio;
 
-import js.Promise;
+#if js
+
+import js.html.MediaDeviceInfo;
+import js.lib.Promise;
 
 class Device {
 
-    public static inline function get() : Promise<Dynamic> {
-        return untyped navigator.mediaDevices.enumerateDevices();
+    public static inline function list() : Promise<Array<MediaDeviceInfo>> {
+        return js.Browser.navigator.mediaDevices.enumerateDevices();
     }
 }
+
+#end
